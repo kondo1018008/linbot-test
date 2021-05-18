@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/line/line-bot-sdk-go/linebot"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -74,4 +75,18 @@ func sendRestoInfo(bot *linebot.Client, e *linebot.Event){
 	if err != nil {
 		log.Println(err)
 	}
+	key := os.Getenv("API_KEY")
+	url := fmt.Sprintf("http://webservice.recruit.co.jp/hotpepper/gourmet/v1/?key=%s&lat=%s&lng=%s&range=5&order=4&count=1",key, lat, lng)
+	resp, err := http.Get(url)
+	defer resp.Body.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	restrans, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(restrans))
+
+
 }
