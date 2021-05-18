@@ -32,9 +32,7 @@ func lineHandler(w http.ResponseWriter, r *http.Request){
 		secret,
 		token,
 		)
-	if err != nil {
-		log.Fatal(err)
-	}
+	errCheck(err)
 	// リクエストからBOTのイベントを取得
 	events, err := bot.ParseRequest(r)
 	// リクエストのチェック
@@ -54,9 +52,8 @@ func lineHandler(w http.ResponseWriter, r *http.Request){
 			case *linebot.TextMessage:
 				replyMessage := message.Text
 				_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(replyMessage)).Do()
-				if err != nil {
-					log.Fatal(err)
-				}
+				errCheck(err)
+
 			case *linebot.LocationMessage:
 				sendRestoInfo(bot, event)
 			}
@@ -71,35 +68,28 @@ func sendRestoInfo(bot *linebot.Client, e *linebot.Event){
 	lng := strconv.FormatFloat(msg.Longitude, 'f', 2, 64)
 
 	replyMsg := getRestoInfo(lat,lng)
+	_, err := bot.ReplyMessage(e.ReplyToken, linebot.NewTextMessage("以下が近辺でお勧めの飲食店です")).Do()
+	errCheck(err)
 
-	_, err := bot.ReplyMessage(e.ReplyToken, linebot.NewTextMessage(replyMsg)).Do()
-	if err != nil {
-		log.Println(err)
-	}
-
-
-
+	_, err = bot.ReplyMessage(e.ReplyToken, linebot.NewTextMessage(replyMsg)).Do()
+	errCheck(err)
 }
 
 func getRestoInfo(lat string, lng string) string{
 	key := os.Getenv("API_KEY")
 	url := fmt.Sprintf("http://webservice.recruit.co.jp/hotpepper/gourmet/v1/?key=%s&lat=%s&lng=%s&range=5&order=4&format=json",key, lat, lng)
 	fmt.Println(url)
+
 	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
+	errCheck(err)
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	errCheck(err)
 
 	var data response
-	if err = json.Unmarshal(body,&data); err != nil{
-		log.Fatal(err)
-	}
+	err = json.Unmarshal(body,&data)
+	errCheck(err)
 
 	info := ""
 	for _, shop := range data.Results.Shop {
@@ -107,7 +97,12 @@ func getRestoInfo(lat string, lng string) string{
 	}
 
 	return info
+}
 
+func errCheck(err error){
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type response struct {
