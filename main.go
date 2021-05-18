@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/line/line-bot-sdk-go/linebot"
 	"io/ioutil"
@@ -69,24 +70,55 @@ func sendRestoInfo(bot *linebot.Client, e *linebot.Event){
 	lat := strconv.FormatFloat(msg.Latitude, 'f', 2, 64)
 	lng := strconv.FormatFloat(msg.Longitude, 'f', 2, 64)
 
-	replyMsg := fmt.Sprintf("経度：%s\n緯度：%s", lat, lng)
+	replyMsg := getRestoInfo(lat,lng)
 
 	_, err := bot.ReplyMessage(e.ReplyToken, linebot.NewTextMessage(replyMsg)).Do()
 	if err != nil {
 		log.Println(err)
 	}
+
+
+
+}
+
+func getRestoInfo(lat string, lng string) string{
 	key := os.Getenv("API_KEY")
-	url := fmt.Sprintf("http://webservice.recruit.co.jp/hotpepper/gourmet/v1/?key=%s&lat=%s&lng=%s&range=5&order=4&count=1",key, lat, lng)
+	url := fmt.Sprintf("http://webservice.recruit.co.jp/hotpepper/gourmet/v1/?key=%s&lat=%s&lng=%s&range=5&order=4&format=json",key, lat, lng)
+	fmt.Println(url)
 	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
-	restrans, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+
+	var data response
+	if err = json.Unmarshal(body,&data); err != nil{
 		log.Fatal(err)
 	}
-	fmt.Println(string(restrans))
 
+	info := ""
+	for _, shop := range data.Results.Shop {
+		info += shop.Name + "\n" + shop.Address + "\n\n"
+	}
 
+	return info
+
+}
+
+type response struct {
+	Results results `json:"results"`
+}
+
+type results struct {
+	Shop []shop `json:"shop"`
+}
+
+type shop struct {
+	Name string `json:"name"`
+	Address string `json:"address"`
 }
