@@ -68,15 +68,16 @@ func sendRestoInfo(bot *linebot.Client, e *linebot.Event){
 	lng := strconv.FormatFloat(msg.Longitude, 'f', 2, 64)
 
 	replyMsg := getRestoInfo(lat,lng)
-	_, err := bot.ReplyMessage(e.ReplyToken, linebot.NewTextMessage("以下が近辺でお勧めの飲食店です")).Do()
+
+	_, err := bot.PushMessage(e.Source.UserID, linebot.NewTextMessage("以下が近辺でお勧めの飲食店です")).Do()
 	errCheck(err)
 
-	_, err = bot.ReplyMessage(e.ReplyToken, linebot.NewTextMessage(replyMsg)).Do()
+	_, err = bot.PushMessage(e.Source.UserID, linebot.NewTextMessage(replyMsg)).Do()
 	errCheck(err)
 }
 
 func getRestoInfo(lat string, lng string) string{
-	key := os.Getenv("API_KEY")
+	key := os.Getenv("API_KEY_RECRUIT")
 	url := fmt.Sprintf("http://webservice.recruit.co.jp/hotpepper/gourmet/v1/?key=%s&lat=%s&lng=%s&range=5&order=4&format=json",key, lat, lng)
 	fmt.Println(url)
 
